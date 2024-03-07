@@ -7,6 +7,11 @@ sys.path.append(cur_dir)
 from charm import* 
 from CDAC import *
 
+log = {
+    'accel_wise' : True,
+    'layer_wise' : False
+}
+
 num_acc=2
 model='bert'
 DATA_TYPE=4
@@ -47,27 +52,27 @@ MODEL_IN=np.array([
 #     [2708,64,7,1] 
 #     ])
 
-part_final, final_config, layer_cycle=cdac_top(MODEL_IN,DATA_TYPE,num_acc)
+part_final, final_config, layer_cycle=cdac_top(MODEL_IN,DATA_TYPE,num_acc,log)
 
 Versal_config = final_config
 # h1,   w1,   w2,   A,   B,   C,  A_BRO, C_BRO,  PACK_IN, PACK_OUT, X,   Y,   Z,  data_type  kernel_type
-# 64.   64.    64.  8.   4.   4.  2.     2.      2.       2.        2.   4.   4.  1.         7.  0.  9.  0.   4.  1.  1.  0.
-AIE_NAME= str(Versal_config[0,3]) + str(Versal_config[0,4]) + str(Versal_config[0,5])
-BUF_NAME= str(Versal_config[0,10]) + str(Versal_config[0,11]) + str(Versal_config[0,12])
+# 64.   64.    64.  8.   4.   4.  2.     2.      2.       2.        2.   4.   4.  1.         7.s  0.  9.  0.   4.  1.  1.  0.
+# AIE_NAME= str(Versal_config[0,3]) + str(Versal_config[0,4]) + str(Versal_config[0,5])
+# BUF_NAME= str(Versal_config[0,10]) + str(Versal_config[0,11]) + str(Versal_config[0,12])
 #Set the design project path
-if DATA_TYPE==1:
-    prj_dir= prj_dir + '/int8_' +  acc +'/' + model + '/int8_' + AIE_NAME + '_' + BUF_NAME
-elif DATA_TYPE==2:
-    prj_dir= prj_dir + '/int16_' +  acc +'/' + model + '/int16_' + AIE_NAME + '_' + BUF_NAME
-elif DATA_TYPE==4:
-    prj_dir= prj_dir + '/fp32_' +  acc +'/' + model + '/fp32_' + AIE_NAME + '_' + BUF_NAME
+# if DATA_TYPE==1:
+#     prj_dir= prj_dir + '/int8_' +  acc +'/' + model + '/int8_' + AIE_NAME + '_' + BUF_NAME
+# elif DATA_TYPE==2:
+#     prj_dir= prj_dir + '/int16_' +  acc +'/' + model + '/int16_' + AIE_NAME + '_' + BUF_NAME
+# elif DATA_TYPE==4:
+#     prj_dir= prj_dir + '/fp32_' +  acc +'/' + model + '/fp32_' + AIE_NAME + '_' + BUF_NAME
 
 #Create the object of the class charm
-subprocess.run(['mkdir','-p' ,f'{prj_dir}'])
-automm=charm(prj_dir)
+# subprocess.run(['mkdir','-p' ,f'{prj_dir}'])
+# automm=charm(prj_dir)
 
 #Launch charm automatic code generator to emit the code for AIE, PL and Host CPU
-device='vck190' # Supported devices are vck190 and vck5000
+# device='vck190' # Supported devices are vck190 and vck5000
 #automm.cacg(Versal_config,device)
 
 # #Run Vitis Compilation Flow

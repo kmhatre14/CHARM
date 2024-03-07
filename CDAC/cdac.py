@@ -5,7 +5,7 @@ from itertools import combinations
 from .cdse import *
 
 
-def cdac_top(MODEL_IN,DATA_TYPE,num_acc):
+def cdac_top(MODEL_IN,DATA_TYPE,num_acc,log):
     total_ops = np.sum(np.multiply(np.multiply(np.multiply(MODEL_IN[:,0],MODEL_IN[:,1]),MODEL_IN[:,2]),MODEL_IN[:,3]))*2
     num_ops = np.multiply(np.multiply(MODEL_IN[:,0],MODEL_IN[:,1]),MODEL_IN[:,2])
     index=np.argsort(num_ops,0)[::-1]
@@ -67,7 +67,7 @@ def cdac_top(MODEL_IN,DATA_TYPE,num_acc):
                 comp_ratio=total_ops_cur/total_ops_nxt
                 total_ops_nxt=total_ops_nxt-total_ops_cur
                 HW_Cur[1:6]=np.add(np.multiply(HW_LEFT,comp_ratio),compensation)
-                temp_config[acc,:],temp_cycle[acc,0],time_layer,HW_Used=cdse_top(MODEL_PART,HW_Cur,DATA_TYPE)
+                temp_config[acc,:],temp_cycle[acc,0],time_layer,HW_Used=cdse_top(MODEL_PART,HW_Cur,DATA_TYPE,log,i,acc)
                 layer_cycle_temp[index_temp]=time_layer
                 print(HW_Cur)
                 print(MODEL_PART)

@@ -6,7 +6,7 @@ from .broadcast_tuning import *
 from .buffer_sel import *
 
 
-def cdse_top(MODEL_IN,HW_Part,DATA_TYPE):
+def cdse_top(MODEL_IN,HW_Part,DATA_TYPE,log,design,acc):
 
     ################ Hardware Constraints ################
     force_assign=0
@@ -131,7 +131,14 @@ def cdse_top(MODEL_IN,HW_Part,DATA_TYPE):
 
     A,B,C,X,Y,Z,buf_sel=[12,4,8,4,1,4,1]
     ############################ DSE Kernel0 ###############################
-
+    if log['accel_wise'] ==  True :
+        f_name = "accel_wise_" + "design_"+ str(design) + "_acc_"+ str(acc)
+        accel_f = open(f_name+".csv", "w")
+        accel_f.write("a,b,c,x,y,z,bram_use,uram_use,internel_mem,load_L_DR,load_L_T,load_R_DL,load_R_T,store_O_S,store_O_T,A_BRO,C_BRO,AIE_CYCLE,Total_Cycles \n")
+    if log['layer_wise'] == True:
+        f_name = "layer_wise_" + "design_"+ str(design) + "_acc_"+ str(acc)
+        layer_f = open(f_name+".csv", "w")
+        layer_f.write("Layer,X_TILE,Y_TILE,Z_TILE,a,b,c,x,y,z,bram_use,uram_use,internel_mem,load_L_DR,load_L_T,load_R_DL,load_R_T,store_O_S,store_O_T,A_BRO,C_BRO,AIE_CYCLE,Total_Cycles \n")
     for c in range(1, 8+1):      ##Row Constaint
         for b in range(1, PACK_IN*2+1): ##Col Constaint
             for a in range(1, AIE_NUM//(b*c)+2):
@@ -211,9 +218,35 @@ def cdse_top(MODEL_IN,HW_Part,DATA_TYPE):
                                 else:
                                     temp_cycle[0,large_t]=max([load_L_DR,load_R_DL])+max([load_L_DR,load_R_DL,AIE_CYCLE])*((X_TILE*Y_TILE*Z_TILE-1)-(X_TILE*Z_TILE-1))+max([load_L_T,load_R_T,AIE_CYCLE,store_O_T])*(X_TILE*Z_TILE-1)+AIE_CYCLE+store_O_S
 
+
+                                # write layer wise debug information to file
+                                if log['layer_wise'] == True:
+                                    layer_f.write("{}".format(large_t))
+                                    layer_f.write(",{},{},{}".format(X_TILE,Y_TILE,Z_TILE))
+                                    layer_f.write(",{},{},{}".format(a,b,c))
+                                    layer_f.write(",{},{},{}".format(x,y,z))
+                                    layer_f.write(",{},{}".format(bram_use,uram_use))
+                                    layer_f.write(",{}".format(bram_use*4+uram_use*32))
+                                    layer_f.write(",{},{},{},{},{},{}".format(load_L_DR,load_L_T,load_R_DL,load_R_T,store_O_S,store_O_T))
+                                    layer_f.write(",{},{}".format(A_BRO,C_BRO))
+                                    layer_f.write(",{}".format(AIE_CYCLE))
+                                    layer_f.write(",{}\n".format(np.multiply(temp_cycle[0,large_t],np.transpose(MODEL_IN[0,3]))))
+
                             temp0_cycle=np.multiply(temp_cycle,np.transpose(MODEL_IN[:,3]))
                             total_cycle=np.sum(temp0_cycle)
-                                
+
+                            # write debug information to file
+                            
+                            if log['accel_wise'] ==  True :
+                                    accel_f.write(",{},{},{}".format(a,b,c))
+                                    accel_f.write(",{},{},{}".format(x,y,z))
+                                    accel_f.write(",{},{}".format(bram_use,uram_use))
+                                    accel_f.write(",{}".format(bram_use*4+uram_use*32))
+                                    accel_f.write(",{},{},{},{},{},{}".format(load_L_DR,load_L_T,load_R_DL,load_R_T,store_O_S,store_O_T))
+                                    accel_f.write(",{},{}".format(A_BRO,C_BRO))
+                                    accel_f.write(",{}".format(AIE_CYCLE))
+                                    accel_f.write(",{}\n".format(total_cycle))                 
+
                             if(total_cycle*0.85<=best_time): # Search design near the best time
                                 if total_cycle<best_time:   # If it is the current best
                                     best_time=total_cycle
@@ -241,6 +274,11 @@ def cdse_top(MODEL_IN,HW_Part,DATA_TYPE):
                                 config[index,15]=uram_use
                                 config[index,16]=buf_index
                                 config[index,num_term:num_term+sample_num]=temp0_cycle[:].copy()
+    if log['accel_wise'] ==  True :
+        accel_f.close()
+
+    if log['layer_wise'] == True:
+        layer_f.close()
 
     config = config[config[:,0].argsort()]
     best_cycle=config[0,0]
