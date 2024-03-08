@@ -99,7 +99,83 @@ def cdac_top(MODEL_IN,DATA_TYPE,num_acc,log):
         return part_final, final_config, layer_cycle
             
 
+# direct_ac stands for direct accelerator composer which can run any configuration given as input and can return the latency 
+# of the accelerator per layers
 
+def direct_ac(MODEL_IN,DATA_TYPE,hw_config,log):
+    total_ops = np.sum(np.multiply(np.multiply(np.multiply(MODEL_IN[:,0],MODEL_IN[:,1]),MODEL_IN[:,2]),MODEL_IN[:,3]))*2
+    num_ops = np.multiply(np.multiply(MODEL_IN[:,0],MODEL_IN[:,1]),MODEL_IN[:,2])
+    index=np.argsort(num_ops,0)[::-1]
+    MODEL_SORT=MODEL_IN[index,:]
 
+    num_layer=MODEL_IN.shape[0]
 
+    best_cycle=1e30
+
+    HW_Used=np.zeros(5)
+    HW_Cur=np.ones(12)
+    HW_Cur = hw_config
+    total_ops_nxt=total_ops
+
+    temp_cycle = np.zeros((1,1))
+    layer_cycle_temp = np.zeros((num_layer))
+
+    MODEL_PART=MODEL_SORT
+
+    total_ops_cur = np.sum(np.multiply(np.multiply(np.multiply(MODEL_PART[:,0],MODEL_PART[:,1]),MODEL_PART[:,2]),MODEL_PART[:,3]))*2
+    comp_ratio=total_ops_cur/total_ops_nxt
+    total_ops_nxt=total_ops_nxt-total_ops_cur
+    try: 
+        temp_config,temp_cycle[0,0],time_layer,HW_Used=cdse_top_direct_estimate(MODEL_PART,HW_Cur,DATA_TYPE,log,0,1)
+    except:
+        print("cdse_top_direct_estimate returned 0 Current configuration failed ")
+        return 0
+    layer_cycle_temp=time_layer
+    
+    print("The layers ")
+    print(MODEL_PART)
+    
+    print("\n")
+    print("The input HW resources : ")
+    print("DDR_BANK: {} , AIE_BUDGET: {} , PLIO_IN: {} " \
+          "PLIO_OUT: {} ,BRAM: {} ,URAM: {} , a: {} ,b: {}, c: {} " \
+          "x: {} , y: {} ,z:{}"
+          .format(HW_Cur[0],HW_Cur[1],HW_Cur[2],HW_Cur[3],HW_Cur[4],HW_Cur[5],HW_Cur[6],HW_Cur[7]
+                  ,HW_Cur[8],HW_Cur[9],HW_Cur[10],HW_Cur[11]))
+    
+    print("\n")
+    print("The resulted HW resources used : ")
+    print("AIE_USED: {} , PLIO_IN: {} " \
+          "PLIO_OUT: {} ,BRAM: {} ,URAM: {}"
+          .format(HW_Used[0],HW_Used[1],HW_Used[2],HW_Used[3],HW_Used[4]))
+
+    print("\n")
+    print("The resulted HW config : ")
+    print("H1: {}, W1: {}, W2: {}, a: {}, b: {}, c: {}, " \
+          "A_BRO : {}, C_BRO: {}, " \
+          "PACK_IN: {}, PACK_OUT: {}, " \
+          "x: {}, y: {}, z:{}, " \
+          "DATA_TYPE: {}, " \
+          "kernel_type: {}"
+           .format(temp_config[0][0],temp_config[0][1],temp_config[0][2],temp_config[0][3],temp_config[0][4]
+                   ,temp_config[0][5],temp_config[0][6],temp_config[0][7]
+                   ,temp_config[0][8],temp_config[0][9],temp_config[0][10],temp_config[0][11]
+                   ,temp_config[0][12],temp_config[0][13],temp_config[0][14]))
+
+    print('\n')
+    if temp_cycle[0,0]==1e30:
+        print('No solution find for partition',end=" ") 
+
+    max_cycle=np.max(temp_cycle)
+    best_cycle=max_cycle
+
+    final_config=temp_config.copy()
+
+    for layer in range(0,num_layer):
+        print('Estimated Latency for Layer: ' + str(layer)+ 
+              ' ' + str(MODEL_PART[layer]) + ' is ' + str(layer_cycle_temp[layer]*1e-6) + ' ms' )
+    
+    print('Estimated Latency is: ' + str(best_cycle*1e-6) + ' ms' )
+    print('Estimated Throughput is: ' + str(total_ops/best_cycle) + ' GOPS' )
+    return final_config, best_cycle
 
