@@ -238,7 +238,7 @@ def cdse_top(MODEL_IN,HW_Part,DATA_TYPE,log,design,acc):
                             # write debug information to file
                             
                             if log['accel_wise'] ==  True :
-                                    accel_f.write(",{},{},{}".format(a,b,c))
+                                    accel_f.write("{},{},{}".format(a,b,c))
                                     accel_f.write(",{},{},{}".format(x,y,z))
                                     accel_f.write(",{},{}".format(bram_use,uram_use))
                                     accel_f.write(",{}".format(bram_use*4+uram_use*32))
